@@ -32,3 +32,7 @@ printf '!parent-ignored.txt\n' > scope/nested/.ignore
 ## 标准输入与字节输出
 
 按 `INPUT-OUTPUT-OBSERVED.md` 检查 UTF-8 标准输入的行号、绝对字节偏移和两个子匹配字节区间；对非 UTF-8 输入和 POSIX 文件名解码 JSON 的 `bytes` 并逐字节核对。比较 `-F` 与默认正则的输出，并用存在及缺失的显式文件检查普通和安静模式的返回码。不得把耗时字段、未观察的 stderr 顺序或跨平台文件名行为硬编码为通用合同。
+
+## 正则依赖集成
+
+先运行 `regex` 依赖自身的验收样本，再以 ripgrep CLI 实际验证默认正则、`-F`、大小写、Unicode 和 JSON 字节区间；库适配器通过不能代替 CLI 集成。另对未覆盖的非 UTF-8 字节、逐行和多行模式、引擎切换及错误补齐上游对照。`regex` 当前仍未完整，缺少的能力不能假设由依赖自动满足。
