@@ -5,7 +5,7 @@ format = "recipkg/1"
 
 [package]
 name = "ripgrep"
-version = "0.1.2"
+version = "0.1.3"
 kind = "software"
 description = "命令行递归正则文本搜索工具 ripgrep 的重建配方草案。"
 entry = "BUILD_PROMPT.md"

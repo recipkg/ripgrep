@@ -28,3 +28,7 @@ printf '!parent-ignored.txt\n' > scope/nested/.ignore
 直接搜索 `scope/x.log`、`scope/rg-only.txt`、`scope/.hidden.txt` 各返回 `needle` 行。对 `scope/binary.dat` 执行 `rg -n needle scope/binary.dat`，本机返回 0 和二进制匹配提示；加 `--text` 返回字节序列 `1:needle`、NUL、`binary`、换行。
 
 在另一个不位于任何 Git 仓库的临时目录，创建 `.gitignore` 含 `ignored.txt`，以及各含一行 `needle` 的 `ignored.txt` 与 `plain.txt`。`rg -l needle .` 返回两个路径；加 `--no-require-git` 则仅返回 `./plain.txt`。自动对照可在独立 [验证仓库](https://github.com/recipkg/standard-library-verification) 指定 `RECIPKG_TEST_RG` 执行。以上是上游样本，只有对独立重建程序通过才是重建验收。
+
+## 标准输入与字节输出
+
+按 `INPUT-OUTPUT-OBSERVED.md` 检查 UTF-8 标准输入的行号、绝对字节偏移和两个子匹配字节区间；对非 UTF-8 输入和 POSIX 文件名解码 JSON 的 `bytes` 并逐字节核对。比较 `-F` 与默认正则的输出，并用存在及缺失的显式文件检查普通和安静模式的返回码。不得把耗时字段、未观察的 stderr 顺序或跨平台文件名行为硬编码为通用合同。
