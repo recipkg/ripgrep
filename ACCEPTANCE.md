@@ -6,3 +6,25 @@
 2. `rg --color=never -n -i needle normal.txt` 返回第 2、3 行；`rg --color=never missing normal.txt` 退出 1；`rg --color=never '(' normal.txt` 退出 2，stderr 报告正则错误。
 3. `rg --color=never --json needle normal.txt` 的逐行 JSON 事件包含 begin、match、end、summary；match 的 path 为 `normal.txt`、行号 3、匹配行 `needle two\n`、子匹配字节区间 0–6。不要比较耗时字段。
 4. 后续应分别验收标准输入、固定字符串、编码、二进制、链接、glob 优先级、嵌套忽略规则、权限错误、多个并发文件、跨平台和完整正则语义。只有经过完整验证才能声称兼容。
+
+## 忽略规则和显式选择
+
+在一次性临时 Git 仓库内创建如下文件（内容为 `needle` 加换行），并禁用外部 ripgrep 配置和 Git 用户配置：
+
+```sh
+mkdir -p scope/nested
+printf 'needle\n' | tee scope/plain.txt scope/x.log scope/keep.log scope/ignored-by-ignore.txt scope/rg-only.txt scope/.hidden.txt scope/nested/parent-ignored.txt scope/nested/other.log >/dev/null
+printf 'needle\000binary\n' > scope/binary.dat
+printf '*.log\nparent-ignored.txt\n' > scope/.gitignore
+printf '!keep.log\nignored-by-ignore.txt\n' > scope/.ignore
+printf '!ignored-by-ignore.txt\nrg-only.txt\n' > scope/.rgignore
+printf '!parent-ignored.txt\n' > scope/nested/.ignore
+```
+
+执行 `rg --color=never -l needle scope`，不依赖结果顺序，路径集合应为 `scope/plain.txt`、`scope/keep.log`、`scope/ignored-by-ignore.txt` 和 `scope/nested/parent-ignored.txt`。`-u` 额外出现 `scope/x.log`、`scope/rg-only.txt` 和 `scope/nested/other.log`；`-uu` 再加 `scope/.hidden.txt`；`-uuu` 再加 `scope/binary.dat`。这些成功样例均返回 0。
+
+使用 `--no-ignore-dot` 时集合为 `scope/plain.txt`、`scope/ignored-by-ignore.txt`、`scope/rg-only.txt`；使用 `--no-ignore-vcs` 时为默认集合加上 `scope/x.log` 和 `scope/nested/other.log`。使用 `-g '*.log'` 时为 `scope/keep.log`、`scope/x.log`、`scope/nested/other.log`；用 `-g '*.txt' -g '!plain.txt'` 得到 `scope/.hidden.txt`、`scope/ignored-by-ignore.txt`、`scope/nested/parent-ignored.txt`、`scope/rg-only.txt`，反转两个 `-g` 的顺序则还包括 `scope/plain.txt`。
+
+直接搜索 `scope/x.log`、`scope/rg-only.txt`、`scope/.hidden.txt` 各返回 `needle` 行。对 `scope/binary.dat` 执行 `rg -n needle scope/binary.dat`，本机返回 0 和二进制匹配提示；加 `--text` 返回字节序列 `1:needle`、NUL、`binary`、换行。
+
+在另一个不位于任何 Git 仓库的临时目录，创建 `.gitignore` 含 `ignored.txt`，以及各含一行 `needle` 的 `ignored.txt` 与 `plain.txt`。`rg -l needle .` 返回两个路径；加 `--no-require-git` 则仅返回 `./plain.txt`。自动对照可在独立 [验证仓库](https://github.com/recipkg/standard-library-verification) 指定 `RECIPKG_TEST_RG` 执行。以上是上游样本，只有对独立重建程序通过才是重建验收。
