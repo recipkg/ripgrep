@@ -36,3 +36,25 @@ printf '!parent-ignored.txt\n' > scope/nested/.ignore
 ## 正则依赖集成
 
 先运行 `regex` 依赖自身的验收样本，再以 ripgrep CLI 实际验证默认正则、`-F`、大小写、Unicode 和 JSON 字节区间；库适配器通过不能代替 CLI 集成。另对未覆盖的非 UTF-8 字节、逐行和多行模式、引擎切换及错误补齐上游对照。`regex` 当前仍未完整，缺少的能力不能假设由依赖自动满足。
+
+## 多行匹配
+
+在临时目录创建下列 UTF-8 文件：
+
+```python
+from pathlib import Path
+Path('multiline.txt').write_text('head\nalpha\nmiddle\nomega\ntail\n', encoding='utf-8')
+```
+
+设置 RIPGREP_CONFIG_PATH=/dev/null 关闭外部配置，命令中的 --color=never 关闭颜色，再核对返回状态及输出：
+
+```sh
+rg --color=never --json '\n' multiline.txt
+rg --color=never -n -U 'alpha\nmiddle' multiline.txt
+rg --color=never -n -U 'alpha.*omega' multiline.txt
+rg --color=never -n -U --multiline-dotall 'alpha.*omega' multiline.txt
+rg --color=never --json -U 'alpha\nmiddle' multiline.txt
+printf 'head\nalpha\nmiddle\nomega\ntail\n' | rg --color=never --json -U 'alpha\nmiddle'
+```
+
+第一条返回 2，stderr 提示启用 multiline；第二条返回 0，打印第 2、3 行；第三条返回 1，因为 `.` 默认不跨换行；第四条返回 0，打印第 2–4 行。JSON 样本包含一条跨两行的 match：`line_number` 为 2，`lines.text` 为 `alpha\nmiddle\n`，`submatches` 的字节区间为 [0,12)。stdin JSON 的路径字段为 `<stdin>`。自动样本为 `RipgrepSamples.test_multiline_matching_and_dotall`；它覆盖小输入和结果边界，不验证超大文件内存、阻塞时长或性能。
