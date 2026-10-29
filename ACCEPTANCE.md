@@ -58,3 +58,27 @@ printf 'head\nalpha\nmiddle\nomega\ntail\n' | rg --color=never --json -U 'alpha\
 ```
 
 第一条返回 2，stderr 提示启用 multiline；第二条返回 0，打印第 2、3 行；第三条返回 1，因为 `.` 默认不跨换行；第四条返回 0，打印第 2–4 行。JSON 样本包含一条跨两行的 match：`line_number` 为 2，`lines.text` 为 `alpha\nmiddle\n`，`submatches` 的字节区间为 [0,12)。stdin JSON 的路径字段为 `<stdin>`。自动样本为 `RipgrepSamples.test_multiline_matching_and_dotall`；它覆盖小输入和结果边界，不验证超大文件内存、阻塞时长或性能。
+
+## 多行计数和最大匹配数
+
+在临时目录创建下列文件：
+
+```python
+from pathlib import Path
+Path('counts.txt').write_text('alpha alpha\nbeta alpha\nalpha\nmiddle\nalpha\nmiddle\n', encoding='utf-8')
+```
+
+设置 RIPGREP_CONFIG_PATH=/dev/null，运行并核对：
+
+```sh
+export RIPGREP_CONFIG_PATH=/dev/null
+rg --color=never -c alpha counts.txt
+rg --color=never --count-matches alpha counts.txt
+rg --color=never -U -c alpha counts.txt
+rg --color=never -U --count-matches alpha counts.txt
+rg --color=never -U -c 'alpha\nmiddle' counts.txt
+rg --color=never -U --count-matches 'alpha\nmiddle' counts.txt
+rg --color=never -U -m 1 -n 'alpha\nmiddle' counts.txt
+```
+
+前四个命令依次输出 4、5、4、5；两个跨行计数命令均输出 2；最大匹配数命令返回 0，并只打印第 3、4 行。自动用例为 `RipgrepSamples.test_multiline_count_and_max_count`；其文件仅有两次跨行匹配，不外推至上下文行、并行多文件或错误输入。

@@ -11,5 +11,7 @@
 ## 多行匹配迭代
 
 - 在本机 ripgrep 15.2.0（版本短提交与固定源码一致）核对默认模式拒绝字面换行、`-U` 跨行匹配、`.` 默认不匹配换行、`--multiline-dotall` 启用 dotall、跨行 JSON 事件和标准输入 `<stdin>` 路径。固定源码补充记录多行模式需要连续文件输入、标准输入先读到 EOF 的限制。
-- `standard-library-verification/tests/test_recipes.py` 的 RipgrepSamples 现有 10 个测试方法全部通过；新增方法对行输出、返回码、JSON 的 lines/submatches 字节偏移和 stdin 路径作断言。
+- `standard-library-verification/tests/test_recipes.py` 的 RipgrepSamples 现有 11 个测试方法全部通过；新增方法对行输出、返回码、JSON 的 lines/submatches 字节偏移和 stdin 路径作断言。
 - 这是上游本机样本，不是独立重建验收；PCRE2、跨平台大文件内存占用、多个文件并发顺序与多行搜索性能未验证。
+
+- 另对照固定源码 `crates/core/flags/defs.rs` 的 `-c`/`--count-matches` 与 `-m` 规则：未跨行的模式仍按匹配行计数；能跨行时 `-c` 按匹配次数计数；`-m 1` 将跨两行的单次匹配视为一个。本地短样本及预期见 `MULTILINE-OBSERVED.md` 和 `ACCEPTANCE.md`。
